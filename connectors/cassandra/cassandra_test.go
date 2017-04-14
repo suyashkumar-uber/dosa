@@ -22,74 +22,81 @@ package cassandra
 
 import (
 	"testing"
-
-	"github.com/gocql/gocql"
-	"github.com/stretchr/testify/assert"
+	"net"
 	"github.com/uber-go/dosa"
+	"github.com/stretchr/testify/assert"
+	"context"
 )
 
-func TestCompareStructToSchema(t *testing.T) {
+var skipTests = false
+var sut dosa.Connector
 
-}
+var ei *dosa.EntityInfo
+var ed *dosa.EntityDefinition
 
-func TestCompareStructToSchemaWrongPk(t *testing.T) {
-	ed := dosa.EntityDefinition{Key: &dosa.PrimaryKey{
-		PartitionKeys: []string{"p1"}},
-		Name: "test",
-		Columns: []*dosa.ColumnDefinition{
-			{Name: "p1", Type: dosa.String},
-			{Name: "c1", Type: dosa.String},
-		},
+func isLocalCassandraRunning() bool {
+	l, err := net.Listen("tcp", "localhost:9042")
+	if err == nil {
+		l.Close()
+		return false
 	}
-	md := gocql.TableMetadata{PartitionKey: []*gocql.ColumnMetadata{
-		{Name: "c1", Type: TestType{typ: gocql.TypeVarchar}},
-	},
-		Columns: map[string]*gocql.ColumnMetadata{
-			"p1": {Name: "p1", Type: TestType{typ: gocql.TypeVarchar}},
-		}}
-	missing := RepairableSchemaMismatchError{}
-	err := compareStructToSchema(&ed, &md, &missing)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `"test"`)
+	return true
 }
 
-func TestCompareStructToSchemaMissingColumn(t *testing.T) {
-	ed := dosa.EntityDefinition{Key: &dosa.PrimaryKey{
-		PartitionKeys: []string{"p1"}},
-		Name: "test",
-		Columns: []*dosa.ColumnDefinition{
-			{Name: "p1", Type: dosa.String},
-			{Name: "c1", Type: dosa.String},
-		},
+func TestConnector_SchemaOps(t *testing.T) {
+	if skipTests {
+		t.Skip("No local cassandra database to test against")
 	}
-	md := gocql.TableMetadata{PartitionKey: []*gocql.ColumnMetadata{
-		{Name: "p1", Type: TestType{typ: gocql.TypeVarchar}},
-	},
-		Columns: map[string]*gocql.ColumnMetadata{
-			"p1": {Name: "p1", Type: TestType{typ: gocql.TypeVarchar}},
-		}}
-	missing := RepairableSchemaMismatchError{}
-	err := compareStructToSchema(&ed, &md, &missing)
-	assert.Nil(t, err)
-	assert.True(t, missing.HasMissing())
-	assert.Equal(t, 1, len(missing.MissingColumns))
-	assert.Equal(t, "test", missing.MissingColumns[0].Tablename)
-	assert.Equal(t, "c1", missing.MissingColumns[0].Column.Name)
+	ss, err := sut.UpsertSchema(context.TODO(), "test", "test", []*dosa.EntityDefinition{ed})
+	assert.Equal(t, int32(1), ss.Version)
+	assert.NoError(t, err)
 }
 
-type TestType struct {
-	typ gocql.Type
+func TestConnector_UpsertAndRead(t *testing.T) {
+	if skipTests {
+		t.Skip("No local cassandra database to test against")
+	}
+	assert.NotNil(t, sut)
+
+	err := sut.Upsert(context.TODO(), ei, map[string]dosa.FieldValue{
+		"booltype": false,
+		"int32type": int32(111),
+	})
+	assert.NoError(t, err)
+	vals, err := sut.Read(context.TODO(), ei, map[string]dosa.FieldValue{
+		"booltype": false,
+	}, []string{"int32type"})
+	assert.NoError(t, err)
+	assert.NotNil(t, vals)
+	assert.Equal(t, dosa.FieldValue(int32(111)), vals["int32type"])
 }
 
-func (t TestType) New() interface{} {
-	panic("not implemented")
+func TestUnimplemented(t *testing.T) {
+	assert.Panics(t, func() {
+		sut.MultiRead(context.TODO(), ei, nil, nil)
+	})
+	assert.Panics(t, func() {
+		sut.MultiRemove(context.TODO(), ei, nil)
+	})
+	assert.Panics(t, func() {
+		sut.MultiUpsert(context.TODO(), ei, nil)
+	})
 }
-func (t TestType) Version() byte {
-	panic("not implemented")
-}
-func (t TestType) Custom() string {
-	panic("not implemented")
-}
-func (t TestType) Type() gocql.Type {
-	return t.typ
+
+func init() {
+	if !isLocalCassandraRunning() {
+		skipTests = true
+		return
+	}
+	conn, err := dosa.GetConnector("cassandra", map[string]interface{}{})
+	if err != nil {
+		panic(err)
+	}
+	sut = conn
+	t, err := dosa.TableFromInstance(&AllTypes{})
+	ed = &t.EntityDefinition
+	ei = &dosa.EntityInfo{
+		Ref: &dosa.SchemaRef{NamePrefix: "test", Scope: "test"},
+		Def: ed,
+	}
 }

@@ -60,8 +60,7 @@ func BenchmarkIntegration(b *testing.B) {
 	randomClient := dosa.NewClient(reg, rconn)
 
 	b.ResetTimer()
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	err = cassandraClient.Initialize(ctx)
 
 	if err != nil {
@@ -69,12 +68,18 @@ func BenchmarkIntegration(b *testing.B) {
 	}
 
 	randomClient.Initialize(ctx)
+	cancel()
 	t := &AllTypes{}
 	for i := 0; i < b.N; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 		if err := randomClient.Read(ctx, dosa.All(), t); err != nil {
 			panic(err)
 		}
 		if err := cassandraClient.Upsert(ctx, dosa.All(), t); err != nil {
+			panic(err)
+		}
+		if err := cassandraClient.Read(ctx, dosa.All(), t); err != nil {
 			panic(err)
 		}
 	}

@@ -39,7 +39,6 @@ import (
 type Connector struct {
 	Cluster  *gocql.ClusterConfig
 	Session  *gocql.Session
-	keyspace string
 }
 
 // CreateIfNotExists implements the interface for gocql
@@ -49,32 +48,25 @@ func (c *Connector) CreateIfNotExists(ctx context.Context, ei *dosa.EntityInfo, 
 
 // Read implements the interface for gocql
 func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[string]dosa.FieldValue, fieldsToRead []string) (values map[string]dosa.FieldValue, err error) {
-	b := NewSelectBuilder(ei.Def)
+	b := NewSelectBuilder(ei)
 	b.Project(fieldsToRead)
 	b.WhereEquals(keys)
 
-	var stmt bytes.Buffer
-	stmt.WriteString("select ")
-	queryResults := makeQueryResults(&stmt, ei, fieldsToRead)
-	fmt.Fprintf(&stmt, ` from "%s" where `, ei.Def.Name)
-	var bound []interface{}
-	needAnd := false
-	for field, value := range keys {
-		if needAnd {
-			stmt.WriteString(" and ")
-		}
-		needAnd = true
-		fmt.Fprintf(&stmt, `"%s" = ?`, field)
-		bound = append(bound, value)
-	}
+	queryResults := b.GetProjected()
+	bound := b.GetBoundVariables()
 
-	err = c.Session.Query(stmt.String(), bound...).WithContext(ctx).Scan(queryResults...)
+	fmt.Printf("read stmt: %s\n", b.GetStatement())
+	err = c.Session.Query(b.GetStatement(), bound...).WithContext(ctx).Scan(queryResults...)
 	if err != nil {
 		return nil, err
 	}
 	values = map[string]dosa.FieldValue{}
 	for inx, field := range fieldsToRead {
 		values[field] = dosa.FieldValue(reflect.ValueOf(queryResults[inx]).Elem().Interface())
+		// UUIDs come back as strings, and must be cast to a dosa.UUID type
+		if ei.Def.FindColumnDefinition(field).Type == dosa.TUUID {
+			values[field] = dosa.UUID(values[field].(string))
+		}
 	}
 	return values, err
 }
@@ -100,7 +92,7 @@ func (c *Connector) upsertInternal(ctx context.Context, ei *dosa.EntityInfo, val
 
 	for name, value := range values {
 		if stmt.Len() == 0 {
-			fmt.Fprintf(&stmt, "insert into %s (", ei.Def.Name)
+			fmt.Fprintf(&stmt, `insert into "%s"."%s" (`, keyspaceResolver(ei.Ref.Scope, ei.Ref.NamePrefix), ei.Def.Name)
 		} else {
 			stmt.WriteByte(',')
 		}
@@ -109,6 +101,7 @@ func (c *Connector) upsertInternal(ctx context.Context, ei *dosa.EntityInfo, val
 			value = string(uuid)
 		}
 		bound = append(bound, value)
+
 	}
 	stmt.WriteString(") values (")
 	for inx := range bound {
@@ -139,7 +132,7 @@ func (c *Connector) Remove(ctx context.Context, ei *dosa.EntityInfo, keys map[st
 
 	for name, value := range keys {
 		if stmt.Len() == 0 {
-			fmt.Fprintf(&stmt, "delete from %s where ", ei.Def.Name)
+			fmt.Fprintf(&stmt, `delete from "%s"."%s" where `, keyspaceResolver(ei.Ref.Scope, ei.Ref.NamePrefix), ei.Def.Name)
 		} else {
 			stmt.WriteString(" AND ")
 		}
@@ -195,7 +188,7 @@ func (c *Connector) Range(ctx context.Context, ei *dosa.EntityInfo, columnCondit
 	stmt.WriteString("select ")
 	queryResults := makeQueryResults(&stmt, ei, fieldsToRead)
 
-	fmt.Fprintf(&stmt, ` from "%s" where `, ei.Def.Name)
+	fmt.Fprintf(&stmt, ` from "%s"."%s" where `, keyspaceResolver(ei.Ref.Scope, ei.Ref.NamePrefix), ei.Def.Name)
 	var bound []interface{}
 	needAnd := false
 	for field, conds := range columnConditions {
@@ -272,7 +265,6 @@ func (c *Connector) Scan(ctx context.Context, ei *dosa.EntityInfo, fieldsToRead 
 
 const (
 	defaultContactPoints = "127.0.0.1"
-	defaultKeyspace      = "test"
 	defaultConsistency   = gocql.LocalQuorum
 )
 
@@ -285,11 +277,6 @@ func init() {
 		}
 		c.Cluster = gocql.NewCluster(strings.Split(contactPoints, ",")...)
 
-		c.keyspace = defaultKeyspace
-		if ival, ok := opts["keyspace"]; ok {
-			c.keyspace = ival.(string)
-		}
-		c.Cluster.Keyspace = c.keyspace
 		// TODO: support consistency level overrides
 		c.Cluster.Consistency = defaultConsistency
 
@@ -299,11 +286,13 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
+
 		return c, nil
 	})
 }
 
 // Shutdown is not implemented
 func (c *Connector) Shutdown() error {
-	panic("not implemented")
+	c.Session.Close()
+	return nil
 }

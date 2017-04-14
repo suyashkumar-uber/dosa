@@ -105,12 +105,20 @@ func compareStructToSchema(ed *dosa.EntityDefinition, md *gocql.TableMetadata, s
 
 }
 
+// given a scope and namePrefix, return the keyspace for this
+func keyspaceResolver(scope, namePrefix string) string {
+	if scope == "production" {
+		return "dosa_" + namePrefix
+	}
+	return scope
+}
+
 // CheckSchema verifies that the schema passed in the registered entities matches the database
 func (c *Connector) CheckSchema(ctx context.Context, scope string, namePrefix string, ed []*dosa.EntityDefinition) (int32, error) {
 	schemaErrors := new(RepairableSchemaMismatchError)
 
 	// TODO: unfortunately, gocql doesn't have a way to pass the context to this operation :(
-	km, err := c.Session.KeyspaceMetadata(c.keyspace)
+	km, err := c.Session.KeyspaceMetadata(keyspaceResolver(scope, namePrefix))
 	if err != nil {
 		return 0, err
 	}

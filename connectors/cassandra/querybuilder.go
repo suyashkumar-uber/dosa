@@ -42,14 +42,14 @@ type QueryBuilder struct {
 	Statement        bytes.Buffer
 	BoundVariables   []interface{}
 	ProjectedResults []interface{}
-	EntityDefinition *dosa.EntityDefinition
+	EntityInfo *dosa.EntityInfo
 	qbstate          state
 }
 
 // NewSelectBuilder starts building a new select statement
-func NewSelectBuilder(ed *dosa.EntityDefinition) *QueryBuilder {
+func NewSelectBuilder(ei *dosa.EntityInfo) *QueryBuilder {
 	builder := newBuilder("select")
-	builder.EntityDefinition = ed
+	builder.EntityInfo = ei
 	return builder
 }
 
@@ -74,7 +74,7 @@ func (qb *QueryBuilder) Project(cols []string) {
 			qb.Statement.Write([]byte{','})
 		}
 		fmt.Fprintf(&qb.Statement, `"%s"`, field)
-		coldef := qb.EntityDefinition.FindColumnDefinition(field)
+		coldef := qb.EntityInfo.Def.FindColumnDefinition(field)
 		switch coldef.Type {
 		case dosa.Bool:
 			qb.ProjectedResults[inx] = reflect.New(reflect.TypeOf(false)).Interface()
@@ -86,7 +86,7 @@ func (qb *QueryBuilder) Project(cols []string) {
 			qb.ProjectedResults[inx] = reflect.New(reflect.TypeOf([]byte{})).Interface()
 		case dosa.Double:
 			qb.ProjectedResults[inx] = reflect.New(reflect.TypeOf(float64(0.0))).Interface()
-		case dosa.TUUID, dosa.String:
+		case dosa.String, dosa.TUUID:
 			qb.ProjectedResults[inx] = reflect.New(reflect.TypeOf("")).Interface()
 		case dosa.Timestamp:
 			qb.ProjectedResults[inx] = reflect.New(reflect.TypeOf(time.Time{})).Interface()
@@ -102,12 +102,21 @@ func (qb *QueryBuilder) WhereEquals(cols map[string]dosa.FieldValue) {
 	switch qb.qbstate {
 	case stateProjected:
 		qb.qbstate = stateWhereClause
-		fmt.Fprintf(&qb.Statement, ` from "%s" where `, qb.EntityDefinition.Name)
+		fmt.Fprintf(&qb.Statement, ` from "%s"."%s" where `, keyspaceResolver(qb.EntityInfo.Ref.Scope, qb.EntityInfo.Ref.NamePrefix), qb.EntityInfo.Def.Name)
 	case stateWhereClause:
 		// this is okay, you can call WhereEquals more than once
 		qb.Statement.WriteByte(' ')
 	default:
 		panic("querybuilder is in invalid state")
+	}
+	var needsAnd = false
+	for key, val := range cols {
+		if needsAnd {
+			qb.Statement.WriteString(" and ")
+		}
+		fmt.Fprintf(&qb.Statement, `"%s"=?`, key)
+		qb.BoundVariables = append(qb.BoundVariables, val)
+		needsAnd = true
 	}
 }
 
@@ -122,4 +131,8 @@ func (qb *QueryBuilder) GetStatement() string {
 // GetBoundVariables returns the bound variable list
 func (qb *QueryBuilder) GetBoundVariables() []interface{} {
 	return qb.BoundVariables
+}
+
+func (qb *QueryBuilder) GetProjected() []interface{} {
+	return qb.ProjectedResults
 }
