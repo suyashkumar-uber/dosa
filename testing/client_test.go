@@ -18,26 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testentity
+package dosatesting_test
 
 import (
-	"time"
+	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/testing"
 )
 
-// TestEntity uses common key types and all types in value fields.
-type TestEntity struct {
-	dosa.Entity `dosa:"name=awesome_test_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
-	UUIDKey     dosa.UUID `dosa:"name=an_uuid_key"`
-	StrKey      string
-	Int64Key    int64
-	UUIDV       dosa.UUID
-	StrV        string
-	Int64V      int64 `dosa:"name=an_int64_value"`
-	Int32V      int32
-	DoubleV     float64
-	BoolV       bool
-	BlobV       []byte
-	TSV         time.Time
+type ValidEntity struct {
+	dosa.Entity `dosa:"primaryKey=UUID"`
+	UUID        dosa.UUID
+}
+
+type InvalidEntity struct {
+	dosa.Entity // no struct tag
+	UUID        dosa.UUID
+}
+
+func TestNewClient(t *testing.T) {
+	c1, err1 := dosatesting.NewClient(&ValidEntity{})
+	assert.NotNil(t, c1)
+	assert.NoError(t, err1)
+
+	c2, err2 := dosatesting.NewClient(&ValidEntity{}, &InvalidEntity{})
+	assert.Nil(t, c2)
+	assert.Error(t, err2)
 }

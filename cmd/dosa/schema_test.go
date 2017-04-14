@@ -141,7 +141,7 @@ func TestSchema_ServiceInference(t *testing.T) {
 				cmd,
 				"--prefix", "foo",
 				"--scope", tc.scope,
-				"../../testentity",
+				"../../testing",
 			}
 			main()
 			assert.Equal(t, options.ServiceName, tc.expected)
@@ -157,7 +157,7 @@ func TestSchema_PrefixRequired(t *testing.T) {
 			"dosa",
 			"schema",
 			cmd,
-			"../../testentity",
+			"../../testing",
 		}
 		main()
 		assert.Contains(t, c.stop(true), "--prefix' was not specified")
@@ -183,8 +183,8 @@ func TestSchema_InvalidDirectory(t *testing.T) {
 			os.Args = append(os.Args, "--prefix", "foo")
 		}
 		os.Args = append(os.Args, []string{
-			"-e", "testentity.go",
-			"../../testentity",
+			"-e", "entity.go",
+			"../../testing",
 			"/dev/null",
 		}...)
 		main()
@@ -211,8 +211,8 @@ func TestSchema_NoEntitiesFound(t *testing.T) {
 			os.Args = append(os.Args, "--prefix", "foo")
 		}
 		os.Args = append(os.Args, []string{
-			"-e", "testentity.go",
-			"../../testentity",
+			"-e", "entity.go",
+			"../../testing",
 		}...)
 		main()
 		assert.Contains(t, c.stop(true), "no entities found")
@@ -244,7 +244,7 @@ func TestSchema_Check_Happy(t *testing.T) {
 			}).Return(int32(1), nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "check", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testing"}
 	main()
 }
 
@@ -289,14 +289,14 @@ func TestSchema_Upsert_Happy(t *testing.T) {
 			}).Return(&dosa.SchemaStatus{Version: int32(1)}, nil)
 		return mc, nil
 	})
-	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testentity"}
+	os.Args = []string{"dosa", "--connector", "mock", "schema", "upsert", "--prefix", "foo", "-e", "_test.go", "-e", "excludeme.go", "-s", "scope", "-v", "../../testing"}
 	main()
 }
 
 func TestSchema_Dump_InvalidFormat(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-f", "invalid", "../../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "invalid", "../../testing"}
 	main()
 	assert.Contains(t, c.stop(true), "Invalid value")
 }
@@ -304,7 +304,7 @@ func TestSchema_Dump_InvalidFormat(t *testing.T) {
 func TestSchema_Dump_CQL(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-v", "../../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-v", "../../testing"}
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")
@@ -314,7 +314,7 @@ func TestSchema_Dump_CQL(t *testing.T) {
 func TestSchema_Dump_UQL(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-f", "uql", "-v", "../../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "uql", "-v", "../../testing"}
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")
@@ -326,7 +326,7 @@ func TestSchema_Dump_UQL(t *testing.T) {
 func TestSchema_Dump_Avro(t *testing.T) {
 	c := StartCapture()
 	exit = func(r int) {}
-	os.Args = []string{"dosa", "schema", "dump", "-f", "avro", "-v", "../../testentity"}
+	os.Args = []string{"dosa", "schema", "dump", "-f", "avro", "-v", "../../testing"}
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")

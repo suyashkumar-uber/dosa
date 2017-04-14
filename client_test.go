@@ -60,26 +60,6 @@ var (
 	nullConnector = &devnull.Connector{}
 )
 
-func ExampleNewClient() {
-	// initialize registrar
-	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", cte1)
-	if err != nil {
-		// registration will fail if the object is tagged incorrectly
-		panic("dosaRenamed.NewRegister returned an error")
-	}
-
-	// use a devnull connector for example purposes
-	conn := &devnull.Connector{}
-
-	// create the client using the registry and connector
-	client := dosaRenamed.NewClient(reg, conn)
-
-	err = client.Initialize(context.Background())
-	if err != nil {
-		errors.Wrap(err, "client.Initialize returned an error")
-	}
-}
-
 func TestNewClient(t *testing.T) {
 	// initialize registrar
 	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", cte1)
