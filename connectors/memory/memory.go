@@ -72,7 +72,7 @@ func (c *Connector) Read(ctx context.Context, ei *dosa.EntityInfo, keys map[stri
 	}
 	c.lock.RLock()
 	defer c.lock.RUnlock()
-	return c.idx[ei.Ref.EntityName]
+	return c.idx[ei.Ref.EntityName][0], nil
 }
 
 // MultiRead is not implemented and should not be used yet.

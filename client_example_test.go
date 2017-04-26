@@ -24,29 +24,27 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/uber-go/dosa/connectors/devnull"
+
+	"github.com/uber-go/dosa"
+	"github.com/uber-go/dosa/connectors/memory"
 )
 
-func ExampleNewClient() {
+func ExampleInMemoryClient() {
 	// initialize registrar
-	reg, err := dosaRenamed.NewRegistrar("test", "myteam.myservice", cte1)
+	reg, err := dosa.NewRegistrar("test", "myteam.myservice", cte1)
 	if err != nil {
 		// registration will fail if the object is tagged incorrectly
 		panic("dosaRenamed.NewRegister returned an error")
 	}
 
-	// use a devnull connector for example purposes
-	conn := &devnull.Connector{}
+	// make an in-memory connector
+	conn := memory.NewConnector()
 
 	// create the client using the registry and connector
-	client := dosaRenamed.NewClient(reg, conn)
+	client := dosa.NewClient(reg, conn)
 
 	err = client.Initialize(context.Background())
 	if err != nil {
 		errors.Wrap(err, "client.Initialize returned an error")
 	}
-}
-
-func ExampleTestClient() {
-
 }
