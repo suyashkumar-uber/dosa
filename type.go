@@ -57,6 +57,9 @@ const (
 
 	// Bool is a bool type
 	Bool
+
+	// SatoriUUID is from github.com/satori/go.uuid
+	SatoriUUID
 )
 
 // UUID stores a string format of uuid.

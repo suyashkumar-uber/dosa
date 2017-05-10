@@ -45,7 +45,7 @@ func typeMap(t dosa.Type) string {
 		return "bigint"
 	case dosa.Timestamp:
 		return "timestamp"
-	case dosa.TUUID:
+	case dosa.TUUID, dosa.SatoriUUID:
 		return "uuid"
 	}
 	return "unknown"

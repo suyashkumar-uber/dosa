@@ -308,7 +308,7 @@ func TestSchema_Dump_CQL(t *testing.T) {
 	main()
 	output := c.stop(false)
 	assert.Contains(t, output, "executing schema dump")
-	assert.Contains(t, output, "create table \"awesome_test_entity\" (\"an_uuid_key\" uuid, \"strkey\" text, \"int64key\" bigint")
+	assert.Contains(t, output, "create table \"awesome_test_entity\" (\"an_uuid_key\" uuid, \"nativeuuid\" uuid, \"strkey\" text, \"int64key\" bigint")
 }
 
 func TestSchema_Dump_UQL(t *testing.T) {

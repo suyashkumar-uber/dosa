@@ -84,6 +84,8 @@ func Data(ei *dosa.EntityInfo, fieldsToRead []string) map[string]dosa.FieldValue
 		case dosa.Timestamp:
 			v = dosa.FieldValue(time.Unix(0, rand.Int63()/2))
 		case dosa.TUUID:
+			v = dosa.FieldValue(uuid.NewV4().String())
+		case dosa.SatoriUUID:
 			v = dosa.FieldValue(uuid.NewV4())
 		default:
 			panic("invalid type " + cd.Type.String())

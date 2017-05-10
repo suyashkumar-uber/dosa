@@ -23,6 +23,7 @@ package yarpc
 import (
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 	dosarpc "github.com/uber/dosa-idl/.gen/dosa"
 )
@@ -31,6 +32,9 @@ import (
 // based on the dosa type. For example, a TUUID type will get a dosa.UUID object
 func RawValueAsInterface(val dosarpc.RawValue, typ dosa.Type) interface{} {
 	switch typ {
+	case dosa.SatoriUUID:
+		uuid, _ := uuid.FromBytes(val.BinaryValue)
+		return uuid
 	case dosa.TUUID:
 		uuid, _ := dosa.BytesToUUID(val.BinaryValue) // TODO: should we handle this error?
 		return uuid
@@ -105,6 +109,8 @@ func RPCTypeFromClientType(t dosa.Type) dosarpc.ElemType {
 		return dosarpc.ElemTypeTimestamp
 	case dosa.TUUID:
 		return dosarpc.ElemTypeUUID
+	case dosa.SatoriUUID:
+		return dosarpc.ElemTypeReserved0
 	}
 	panic("bad type")
 }
@@ -128,6 +134,8 @@ func RPCTypeToClientType(t dosarpc.ElemType) dosa.Type {
 		return dosa.Timestamp
 	case dosarpc.ElemTypeUUID:
 		return dosa.TUUID
+	case dosarpc.ElemTypeReserved0:
+		return dosa.SatoriUUID
 	}
 	panic("bad type")
 }

@@ -32,14 +32,15 @@ import (
 var (
 	// map from dosa type to uql type string
 	uqlTypes = map[dosa.Type]string{
-		dosa.String:    "string",
-		dosa.Blob:      "blob",
-		dosa.Bool:      "bool",
-		dosa.Double:    "double",
-		dosa.Int32:     "int32",
-		dosa.Int64:     "int64",
-		dosa.Timestamp: "timestamp",
-		dosa.TUUID:     "uuid",
+		dosa.String:     "string",
+		dosa.Blob:       "blob",
+		dosa.Bool:       "bool",
+		dosa.Double:     "double",
+		dosa.Int32:      "int32",
+		dosa.Int64:      "int64",
+		dosa.Timestamp:  "timestamp",
+		dosa.TUUID:      "uuid",
+		dosa.SatoriUUID: "uuid",
 	}
 
 	funcMap = template.FuncMap{

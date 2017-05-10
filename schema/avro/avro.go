@@ -39,14 +39,15 @@ const (
 
 // map from dosa type to avro type
 var avroTypes = map[dosa.Type]gv.Schema{
-	dosa.String:    &gv.StringSchema{},
-	dosa.Blob:      &gv.BytesSchema{},
-	dosa.Bool:      &gv.BooleanSchema{},
-	dosa.Double:    &gv.DoubleSchema{},
-	dosa.Int32:     &gv.IntSchema{},
-	dosa.Int64:     &gv.LongSchema{},
-	dosa.Timestamp: &gv.LongSchema{},
-	dosa.TUUID:     &gv.StringSchema{},
+	dosa.String:     &gv.StringSchema{},
+	dosa.Blob:       &gv.BytesSchema{},
+	dosa.Bool:       &gv.BooleanSchema{},
+	dosa.Double:     &gv.DoubleSchema{},
+	dosa.Int32:      &gv.IntSchema{},
+	dosa.Int64:      &gv.LongSchema{},
+	dosa.Timestamp:  &gv.LongSchema{},
+	dosa.TUUID:      &gv.StringSchema{},
+	dosa.SatoriUUID: &gv.StringSchema{},
 }
 
 // Record implements Schema and represents Avro record type.

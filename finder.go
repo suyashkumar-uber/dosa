@@ -264,6 +264,8 @@ func stringToDosaType(inType string, packagePrefix string) Type {
 		return Timestamp
 	case packagePrefix + ".UUID":
 		return TUUID
+	case "uuid.UUID":
+		return SatoriUUID
 	default:
 		return Invalid
 	}

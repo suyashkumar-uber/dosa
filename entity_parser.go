@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	satori "github.com/satori/go.uuid"
 )
 
 const (
@@ -311,14 +312,15 @@ func parseField(typ Type, name string, tag string) (*ColumnDefinition, error) {
 }
 
 var (
-	uuidType      = reflect.TypeOf(UUID(""))
-	blobType      = reflect.TypeOf([]byte{})
-	timestampType = reflect.TypeOf(time.Time{})
-	int32Type     = reflect.TypeOf(int32(0))
-	int64Type     = reflect.TypeOf(int64(0))
-	doubleType    = reflect.TypeOf(float64(0.0))
-	stringType    = reflect.TypeOf("")
-	boolType      = reflect.TypeOf(true)
+	uuidType       = reflect.TypeOf(UUID(""))
+	blobType       = reflect.TypeOf([]byte{})
+	timestampType  = reflect.TypeOf(time.Time{})
+	int32Type      = reflect.TypeOf(int32(0))
+	int64Type      = reflect.TypeOf(int64(0))
+	doubleType     = reflect.TypeOf(float64(0.0))
+	stringType     = reflect.TypeOf("")
+	boolType       = reflect.TypeOf(true)
+	satoriUUIDType = reflect.TypeOf(satori.UUID{})
 )
 
 func typify(f reflect.Type) (Type, error) {
@@ -339,6 +341,8 @@ func typify(f reflect.Type) (Type, error) {
 		return String, nil
 	case boolType:
 		return Bool, nil
+	case satoriUUIDType:
+		return SatoriUUID, nil
 	}
 
 	return Invalid, fmt.Errorf("Invalid type %v", f)

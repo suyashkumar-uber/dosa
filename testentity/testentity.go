@@ -23,6 +23,7 @@ package testentity
 import (
 	"time"
 
+	"github.com/satori/go.uuid"
 	"github.com/uber-go/dosa"
 )
 
@@ -30,6 +31,7 @@ import (
 type TestEntity struct {
 	dosa.Entity `dosa:"name=awesome_test_entity, primaryKey=(UUIDKey, StrKey ASC, Int64Key DESC)"`
 	UUIDKey     dosa.UUID `dosa:"name=an_uuid_key"`
+	NativeUUID  uuid.UUID
 	StrKey      string
 	Int64Key    int64
 	UUIDV       dosa.UUID
